@@ -38,6 +38,9 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
     int totalNumberOfDownloadedFiles;
     int count = 0;
     ImageView mImageView;
+    String mFolderName, mFileExtension;
+    String fileNameWithExtension;
+    long startTime;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         setContentView(R.layout.activity_main);
 
         downloadListener = this;
-
+        startTime = System.currentTimeMillis();
         new DownloadTask(this).execute(
                 "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
                 "0", "1", "1"
@@ -118,16 +121,19 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                 Map<String, List<String>> responseHeaders = connection.getHeaderFields();
                 if (remaining_download_size == 0) {
                     total_size = remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
+                    fileNameWithExtension = responseHeaders.get("Content-Disposition").get(0);
                     startDownload();
                     return null;
                 }
+                mFolderName = fileNameWithExtension.substring(fileNameWithExtension.indexOf("1"), fileNameWithExtension.lastIndexOf("."));
+                mFileExtension = fileNameWithExtension.substring(fileNameWithExtension.lastIndexOf("."));
                 String folder_path = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DCIM /*+ File.separator*/ + "/Arnab").getAbsolutePath();
+                        Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName).getAbsolutePath();
                 File folder_file = new File(folder_path);
                 if (!folder_file.exists())
                     folder_file.mkdirs();
                 String m_path = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DCIM + "/Arnab/Image" + sUrl[3] + ".jpg").getAbsolutePath();
+                        Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + sUrl[3]).getAbsolutePath();
                 File file = new File(m_path);
                 if (!file.exists())
                     file.createNewFile();
@@ -174,11 +180,11 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         @Override
         protected Void doInBackground(Void... voids) {
             String folderPath = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + "/Arnab").getAbsolutePath();
+                    Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName).getAbsolutePath();
             File folder = new File(folderPath);
 
             String m_pathFinal = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + "/ArnabFinal.jpg").getAbsolutePath();
+                    Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "Final." + mFileExtension).getAbsolutePath();
 
             try {
                 File finalFile = new File(m_pathFinal);
@@ -200,11 +206,15 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                         fileInputStream.read(xy);
                         fileOutputStream.write(xy);
                         fileInputStream.close();
+                        file.delete();
                     }
                     fileOutputStream.flush();
                     fileOutputStream.close();
                     Log.d("msg", "Merge Completed");
                     onFullDownloadComplete(finalFile);
+                    if (folder.delete()) {
+                        Log.d("msg", "deleted");
+                    }
                 }
             } catch (Exception e) {
                 Log.e("msg", "Exception: " + e);
@@ -224,13 +234,14 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
 
     @Override
     public void onFullDownloadComplete(File file) {
+        Log.d("msg", "Time taken: " + Math.abs(startTime - System.currentTimeMillis()));
         String filePath = file.getPath();
-       final Bitmap bitmap = BitmapFactory.decodeFile(filePath);
-       runOnUiThread(new Runnable() {
-           @Override
-           public void run() {
-               mImageView.setImageBitmap(bitmap);
-           }
-       });
+        final Bitmap bitmap = BitmapFactory.decodeFile(filePath);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mImageView.setImageBitmap(bitmap);
+            }
+        });
     }
 }
