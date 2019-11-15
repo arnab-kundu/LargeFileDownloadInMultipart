@@ -21,15 +21,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements DownloadListener {
 
-    public static final long CHUNK_DOWNLOAD_OFFSET = 3145728;//_3MB_IN_BYTES
+    public static final long CHUNK_DOWNLOAD_OFFSET = 3145728 / 3 * 10;//_3MB_IN_BYTES
     public long remaining_download_size = 0;
     public long total_size = 0;
     public long startSize = 0;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
     String fileNameWithExtension;
     long startTime;
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,7 +52,8 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         downloadListener = this;
         startTime = System.currentTimeMillis();
         new DownloadTask(this).execute(
-                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
+                // "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
+                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
                 "0", "1", "1"
         );
 
@@ -61,19 +64,42 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         //"https://ars.els-cdn.com/content/image/1-s2.0-S0092867415012702-mmc6.pdf"
         //"https://speed.hetzner.de/100MB.bin"
         //new MergeFileTask().execute();
+
+        //ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(5,10,5*60*1000, TimeUnit.MILLISECONDS,)
+
+
+
+    }
+
+
+    private void threadInitiator(){
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        do {
+            executorService.execute(new DownloaderRunnable("https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3", startSize, endSize, count));
+            startSize += CHUNK_DOWNLOAD_OFFSET;
+            endSize += CHUNK_DOWNLOAD_OFFSET;
+            if (endSize > total_size) {
+                endSize = total_size;
+            }
+            remaining_download_size -= CHUNK_DOWNLOAD_OFFSET;
+            count++;
+            Log.d("msg", "count: " + count);
+
+        } while (remaining_download_size > 0);
     }
 
     private void startDownload() {
         do {
             new DownloadTask(this).execute(
-                    "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
+                    //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
+                    "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
                     "" + startSize, "" + endSize, "" + count
             );
             startSize += CHUNK_DOWNLOAD_OFFSET;
             endSize += CHUNK_DOWNLOAD_OFFSET;
-           /* if (endSize > total_size) {
+            if (endSize > total_size) {
                 endSize = total_size;
-            }*/
+            }
             remaining_download_size -= CHUNK_DOWNLOAD_OFFSET;
             count++;
             Log.d("msg", "count: " + count);
@@ -122,10 +148,11 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                 if (remaining_download_size == 0) {
                     total_size = remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
                     fileNameWithExtension = responseHeaders.get("Content-Disposition").get(0);
-                    startDownload();
+                    //startDownload();
+                    threadInitiator();
                     return null;
                 }
-                mFolderName = fileNameWithExtension.substring(fileNameWithExtension.indexOf("1"), fileNameWithExtension.lastIndexOf("."));
+                mFolderName = fileNameWithExtension.substring(0, fileNameWithExtension.lastIndexOf("."));
                 mFileExtension = fileNameWithExtension.substring(fileNameWithExtension.lastIndexOf("."));
                 String folder_path = Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName).getAbsolutePath();
@@ -153,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                     if (fileLength > 0) // only if total length is known
                         publishProgress((int) (total * 100 / fileLength));
                     output.write(data, 0, count);
-                    Log.d("msg", "" + total / (1024 * 1024) + "MB");
+                    Log.d("msg", "Thread:" + sUrl[3] + " " + total / (1024 * 1024) + "MB");
                     onChunkDownloadComplete();
                 }
             } catch (Exception e) {
@@ -184,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
             File folder = new File(folderPath);
 
             String m_pathFinal = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "Final." + mFileExtension).getAbsolutePath();
+                    Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "Final" + mFileExtension).getAbsolutePath();
 
             try {
                 File finalFile = new File(m_pathFinal);
@@ -206,15 +233,15 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                         fileInputStream.read(xy);
                         fileOutputStream.write(xy);
                         fileInputStream.close();
-                        file.delete();
+                        //file.delete();
                     }
                     fileOutputStream.flush();
                     fileOutputStream.close();
                     Log.d("msg", "Merge Completed");
                     onFullDownloadComplete(finalFile);
-                    if (folder.delete()) {
+                    /*if (folder.delete()) {
                         Log.d("msg", "deleted");
-                    }
+                    }*/
                 }
             } catch (Exception e) {
                 Log.e("msg", "Exception: " + e);
@@ -228,7 +255,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         totalNumberOfDownloadedFiles++;
         if (totalNumberOfDownloadedFiles == count) {
             Log.d("msg", "onChunkDownloadComplete: ");
-            new MergeFileTask().execute();
+            //new MergeFileTask().execute();
         }
     }
 
