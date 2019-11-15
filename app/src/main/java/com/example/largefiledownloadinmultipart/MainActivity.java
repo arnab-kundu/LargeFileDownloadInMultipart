@@ -1,11 +1,14 @@
 package com.example.largefiledownloadinmultipart;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.util.Log;
+import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,32 +22,45 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DownloadListener {
 
     public static final long CHUNK_DOWNLOAD_OFFSET = 3145728;//_3MB_IN_BYTES
     public long remaining_download_size = 0;
+    public long total_size = 0;
     public long startSize = 0;
     public long endSize = CHUNK_DOWNLOAD_OFFSET;
+    DownloadListener downloadListener;
+    int totalNumberOfDownloadedFiles;
+    int count = 0;
+    ImageView mImageView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        /*new DownloadTask(this).execute(
+        downloadListener = this;
+
+        new DownloadTask(this).execute(
                 "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
-                "0", "1","1"
-        );*/
+                "0", "1", "1"
+        );
+
+        mImageView = findViewById(R.id.iv);
+
+
         //"https://skysite-temp.s3-us-west-1.amazonaws.com/SS-PRD/167157/11694352/TempZIP/3c86a0fa-57cc-4ace-8bcf-b58b280bd9fb.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3CFE5YOSHYRV7V7X%2F20191114%2Fus-west-1%2Fs3%2Faws4_request&X-Amz-Date=20191114T093101Z&X-Amz-Expires=86399&X-Amz-SignedHeaders=host&X-Amz-Signature=9fceeca27c816115b24dca3d81e2ff118430c0d0057fc3a82a4ddfde235b3196"
         //"https://ars.els-cdn.com/content/image/1-s2.0-S0092867415012702-mmc6.pdf"
         //"https://speed.hetzner.de/100MB.bin"
-        new MergeFileTask().execute();
+        //new MergeFileTask().execute();
     }
 
-    private void startDownload(){
-        int count = 1;
+    private void startDownload() {
         do {
             new DownloadTask(this).execute(
                     "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
@@ -52,9 +68,12 @@ public class MainActivity extends AppCompatActivity {
             );
             startSize += CHUNK_DOWNLOAD_OFFSET;
             endSize += CHUNK_DOWNLOAD_OFFSET;
+           /* if (endSize > total_size) {
+                endSize = total_size;
+            }*/
             remaining_download_size -= CHUNK_DOWNLOAD_OFFSET;
             count++;
-            Log.d("msg", "count: "+count);
+            Log.d("msg", "count: " + count);
 
         } while (remaining_download_size > 0);
 
@@ -98,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 input = connection.getInputStream();
                 Map<String, List<String>> responseHeaders = connection.getHeaderFields();
                 if (remaining_download_size == 0) {
-                    remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
+                    total_size = remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
                     startDownload();
                     return null;
                 }
@@ -129,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                         publishProgress((int) (total * 100 / fileLength));
                     output.write(data, 0, count);
                     Log.d("msg", "" + total / (1024 * 1024) + "MB");
+                    onChunkDownloadComplete();
                 }
             } catch (Exception e) {
                 Log.e("msg", "" + e);
@@ -153,52 +173,64 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            String m_path = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + "/Arnab.jpg").getAbsolutePath();
-            String m_path1 = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + "/Arnab1.jpg").getAbsolutePath();
+            String folderPath = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DCIM + "/Arnab").getAbsolutePath();
+            File folder = new File(folderPath);
+
             String m_pathFinal = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DCIM + "/ArnabFinal.jpg").getAbsolutePath();
+
             try {
                 File finalFile = new File(m_pathFinal);
                 if (!finalFile.exists()) {
                     finalFile.createNewFile();
                 }
 
-                File file1 = new File(m_path);
-                if (!file1.exists()) {
-                    file1.createNewFile();
+                if (folder.exists()) {
+                    File[] files = folder.listFiles();
+                    ArrayList<File> fileArrayList = new ArrayList<>();
+                    for (File file : files) {
+                        fileArrayList.add(file);
+                    }
+                    Collections.sort(fileArrayList);
+                    FileOutputStream fileOutputStream = new FileOutputStream(finalFile);
+                    for (File file : fileArrayList) {
+                        FileInputStream fileInputStream = new FileInputStream(file);
+                        byte[] xy = new byte[(int) file.length()];
+                        fileInputStream.read(xy);
+                        fileOutputStream.write(xy);
+                        fileInputStream.close();
+                    }
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                    Log.d("msg", "Merge Completed");
+                    onFullDownloadComplete(finalFile);
                 }
-                File file2 = new File(m_path1);
-                if (!file2.exists()) {
-                    file2.createNewFile();
-                }
-
-
-
-                FileOutputStream fileOutputStream = new FileOutputStream(finalFile);
-
-
-                FileInputStream fileInputStream = new FileInputStream(file1);
-                byte[] xy = new byte[(int) file1.length()];
-                fileInputStream.read(xy);
-                fileOutputStream.write(xy);
-                fileInputStream.close();
-
-                FileInputStream fileInputStream2 = new FileInputStream(file2);
-                byte[] xy2 = new byte[(int) file2.length()];
-                fileInputStream2.read(xy2);
-                fileOutputStream.write(xy2);
-                fileInputStream2.close();
-
-                fileOutputStream.close();
             } catch (Exception e) {
-                Log.e("msg", "" + e);
+                Log.e("msg", "Exception: " + e);
             }
-
             return null;
         }
     }
 
+    @Override
+    public void onChunkDownloadComplete() {
+        totalNumberOfDownloadedFiles++;
+        if (totalNumberOfDownloadedFiles == count) {
+            Log.d("msg", "onChunkDownloadComplete: ");
+            new MergeFileTask().execute();
+        }
+    }
 
+    @Override
+    public void onFullDownloadComplete(File file) {
+        String filePath = file.getPath();
+       final Bitmap bitmap = BitmapFactory.decodeFile(filePath);
+       runOnUiThread(new Runnable() {
+           @Override
+           public void run() {
+               mImageView.setImageBitmap(bitmap);
+           }
+       });
+    }
 }
