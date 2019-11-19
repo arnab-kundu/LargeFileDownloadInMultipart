@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
     String mFolderName, mFileExtension;
     String fileNameWithExtension;
     long startTime;
-
+String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/asd.mp4?alt=media&token=20c3a6ea-f311-4ec1-a070-0169a2ec310f";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,7 +53,8 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
         startTime = System.currentTimeMillis();
         new DownloadTask(this).execute(
                 // "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
-                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
+                //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
+                url,
                 "0", "1", "1"
         );
 
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
     private void threadInitiator(){
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         do {
-            executorService.execute(new DownloaderRunnable("https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3", startSize, endSize, count));
+            executorService.execute(new DownloaderRunnable(url, startSize, endSize, count,this));
             startSize += CHUNK_DOWNLOAD_OFFSET;
             endSize += CHUNK_DOWNLOAD_OFFSET;
             if (endSize > total_size) {
@@ -159,8 +160,14 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
                 File folder_file = new File(folder_path);
                 if (!folder_file.exists())
                     folder_file.mkdirs();
-                String m_path = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + sUrl[3]).getAbsolutePath();
+                String m_path;
+                if( sUrl[3].length()>1) {
+                    m_path = Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + sUrl[3]).getAbsolutePath();
+                }else {
+                    m_path = Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image0" + sUrl[3]).getAbsolutePath();
+                }
                 File file = new File(m_path);
                 if (!file.exists())
                     file.createNewFile();
@@ -206,6 +213,8 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
 
         @Override
         protected Void doInBackground(Void... voids) {
+            mFolderName="Arnab";
+            mFileExtension=".mp4";
             String folderPath = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName).getAbsolutePath();
             File folder = new File(folderPath);
@@ -252,10 +261,11 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
 
     @Override
     public void onChunkDownloadComplete() {
+        Log.d("msg","callback");
         totalNumberOfDownloadedFiles++;
         if (totalNumberOfDownloadedFiles == count) {
-            Log.d("msg", "onChunkDownloadComplete: ");
-            //new MergeFileTask().execute();
+            Log.d("msg", "onChunkDownloadComplete: Finished");
+            new MergeFileTask().execute();
         }
     }
 

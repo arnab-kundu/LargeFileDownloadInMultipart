@@ -28,7 +28,8 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
         startTime = System.currentTimeMillis();
                 //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6"
         new DownloadTask(this).execute(
-                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3"
+                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/asd.mp4?alt=media&token=20c3a6ea-f311-4ec1-a070-0169a2ec310f"
+                //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3"
         );
 
     }
@@ -68,7 +69,7 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
 
                 // download the file
                 input = connection.getInputStream();
-                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Arnab.pdf");
+                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Arnab.mp4");
                 if (!file.exists()) {
                     file.createNewFile();
                 }

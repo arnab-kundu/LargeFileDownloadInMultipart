@@ -13,14 +13,17 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-public class DownloaderRunnable implements Runnable, DownloadListener {
+public class DownloaderRunnable implements Runnable {
 
+    MainActivity context;
 
-    public DownloaderRunnable(String url, long startSize, long endSize, int count) {
+    public DownloaderRunnable(String url, long startSize, long endSize, int count, MainActivity context) {
         this.url = url;
         this.startSize = startSize;
         this.endSize = endSize;
         this.count = count;
+        if (this.context == null)
+            this.context = context;
     }
 
     public String url;
@@ -32,7 +35,7 @@ public class DownloaderRunnable implements Runnable, DownloadListener {
     DownloadListener downloadListener;
     int totalNumberOfDownloadedFiles;
     int count = 0;
-    String mFolderName="Arnab", mFileExtension="pdf";
+    String mFolderName = "Arnab", mFileExtension = "pdf";
     String fileNameWithExtension;
     long startTime;
 
@@ -86,8 +89,8 @@ public class DownloaderRunnable implements Runnable, DownloadListener {
                 total += count;
                 output.write(data, 0, count);
                 Log.d("msg", "Thread:" + DownloaderRunnable.this.count + " " + total / (1024 * 1024) + "MB");
-                onChunkDownloadComplete();
             }
+            context.onChunkDownloadComplete();
         } catch (Exception e) {
             Log.e("msg", "" + e);
             return;
@@ -104,15 +107,5 @@ public class DownloaderRunnable implements Runnable, DownloadListener {
                 connection.disconnect();
         }
         return;
-    }
-
-    @Override
-    public void onChunkDownloadComplete() {
-        Log.d("msg", "onChunkDownloadComplete: "+count);
-    }
-
-    @Override
-    public void onFullDownloadComplete(File file) {
-
     }
 }
