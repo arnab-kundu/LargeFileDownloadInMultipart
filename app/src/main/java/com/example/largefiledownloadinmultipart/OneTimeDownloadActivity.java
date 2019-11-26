@@ -1,5 +1,6 @@
 package com.example.largefiledownloadinmultipart;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -26,10 +27,8 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_one_time_download);
         startTime = System.currentTimeMillis();
-                //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6"
         new DownloadTask(this).execute(
-                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/asd.mp4?alt=media&token=20c3a6ea-f311-4ec1-a070-0169a2ec310f"
-                //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3"
+                "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3"
         );
 
     }
@@ -41,9 +40,18 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
 
         private Context context;
         private PowerManager.WakeLock mWakeLock;
+        private ProgressDialog progressDialog;
 
         public DownloadTask(Context context) {
             this.context = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(context);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.show();
         }
 
         @Override
@@ -69,7 +77,7 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
 
                 // download the file
                 input = connection.getInputStream();
-                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Arnab.mp4");
+                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Arnab1.mp4");
                 if (!file.exists()) {
                     file.createNewFile();
                 }
@@ -85,9 +93,12 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
                     }
                     total += count;
                     // publishing the progress....
-                    if (fileLength > 0) // only if total length is known
+                    if (fileLength > 0) { // only if total length is known
                         publishProgress((int) (total * 100 / fileLength));
+                        progressDialog.setProgress((int) (total * 100 / fileLength));
+                    }
                     output.write(data, 0, count);
+                    Log.d("msg", "downloading: " + count);
                 }
                 Log.d("msg", "Time taken" + (System.currentTimeMillis() - startTime));
             } catch (Exception e) {
@@ -106,6 +117,13 @@ public class OneTimeDownloadActivity extends AppCompatActivity {
                     connection.disconnect();
             }
             return null;
+
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            progressDialog.dismiss();
         }
     }
 }
