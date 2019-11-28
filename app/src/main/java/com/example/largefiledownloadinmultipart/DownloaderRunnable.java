@@ -15,15 +15,14 @@ import java.util.Map;
 
 public class DownloaderRunnable implements Runnable {
 
-    MainActivity context;
 
-    public DownloaderRunnable(String url, long startSize, long endSize, int count, MainActivity context) {
+    public DownloaderRunnable(String url, long startSize, long endSize, int count, DownloadListener downloadListener) {
         this.url = url;
         this.startSize = startSize;
         this.endSize = endSize;
         this.count = count;
-        if (this.context == null)
-            this.context = context;
+        if (this.downloadListener == null)
+            this.downloadListener = downloadListener;
     }
 
     public String url;
@@ -75,14 +74,20 @@ public class DownloaderRunnable implements Runnable {
             File folder_file = new File(folder_path);
             if (!folder_file.exists())
                 folder_file.mkdirs();
-            String m_path = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + count).getAbsolutePath();
+            String m_path;
+            if (count > 9) {
+                m_path = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + count).getAbsolutePath();
+            } else {
+                m_path = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image0" + count).getAbsolutePath();
+            }
             File file = new File(m_path);
             if (!file.exists())
                 file.createNewFile();
             output = new FileOutputStream(file);
 
-            byte[] data = new byte[4096];
+            byte[] data = new byte[4096*1024*2];
             long total = 0;
             int count;
             while ((count = input.read(data)) != -1) {
@@ -90,7 +95,7 @@ public class DownloaderRunnable implements Runnable {
                 output.write(data, 0, count);
                 Log.d("msg", "Thread:" + DownloaderRunnable.this.count + " " + total / (1024 * 1024) + "MB");
             }
-            context.onChunkDownloadComplete();
+            downloadListener.onChunkDownloadComplete();
         } catch (Exception e) {
             Log.e("msg", "" + e);
             return;

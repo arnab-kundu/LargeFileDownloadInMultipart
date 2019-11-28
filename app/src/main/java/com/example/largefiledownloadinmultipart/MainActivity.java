@@ -1,8 +1,6 @@
 package com.example.largefiledownloadinmultipart;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements DownloadListener 
     String mFolderName, mFileExtension;
     String fileNameWithExtension;
     long startTime;
-String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/asd.mp4?alt=media&token=20c3a6ea-f311-4ec1-a070-0169a2ec310f";
+    String url = "https://skysite-temp.s3-us-west-1.amazonaws.com/SS-PRD/167157/11694352/TempZIP/3c86a0fa-57cc-4ace-8bcf-b58b280bd9fb.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3CFE5YOSHYRV7V7X%2F20191119%2Fus-west-1%2Fs3%2Faws4_request&X-Amz-Date=20191119T112556Z&X-Amz-Expires=518399&X-Amz-SignedHeaders=host&X-Amz-Signature=f808b9ba0b4782d003af40d4ec2f2489dca35c75cdd90daf05ac4870ed7ebb95";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -51,32 +50,28 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
 
         downloadListener = this;
         startTime = System.currentTimeMillis();
-        new DownloadTask(this).execute(
-                // "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
-                //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
-                url,
-                "0", "1", "1"
-        );
-
+        new DownloadTask(this).execute(url, "0", "1", "1");
         mImageView = findViewById(R.id.iv);
+        Callable callable = new Callable() {
+            @Override
+            public Object call() throws Exception {
+                return null;
+            }
+        };
 
-
-        //"https://skysite-temp.s3-us-west-1.amazonaws.com/SS-PRD/167157/11694352/TempZIP/3c86a0fa-57cc-4ace-8bcf-b58b280bd9fb.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3CFE5YOSHYRV7V7X%2F20191114%2Fus-west-1%2Fs3%2Faws4_request&X-Amz-Date=20191114T093101Z&X-Amz-Expires=86399&X-Amz-SignedHeaders=host&X-Amz-Signature=9fceeca27c816115b24dca3d81e2ff118430c0d0057fc3a82a4ddfde235b3196"
-        //"https://ars.els-cdn.com/content/image/1-s2.0-S0092867415012702-mmc6.pdf"
-        //"https://speed.hetzner.de/100MB.bin"
-        //new MergeFileTask().execute();
-
-        //ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(5,10,5*60*1000, TimeUnit.MILLISECONDS,)
-
-
-
+        try {
+            callable.call();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
-    private void threadInitiator(){
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private void threadInitiator() {
+        Log.d("msg", "Available Thread: " + Runtime.getRuntime().availableProcessors());
+        ExecutorService executorService = Executors.newFixedThreadPool(50);//Runtime.getRuntime().availableProcessors());
         do {
-            executorService.execute(new DownloaderRunnable(url, startSize, endSize, count,this));
+            executorService.execute(new DownloaderRunnable(url, startSize, endSize, count, this));
             startSize += CHUNK_DOWNLOAD_OFFSET;
             endSize += CHUNK_DOWNLOAD_OFFSET;
             if (endSize > total_size) {
@@ -91,11 +86,7 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
 
     private void startDownload() {
         do {
-            new DownloadTask(this).execute(
-                    //"https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/1_li_jiang_guilin_yangshuo_2011.jpg?alt=media&token=651a98d3-8929-4578-b112-095b9055d8b6",
-                    "https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/54mb.pdf?alt=media&token=0cf7ee69-4875-4e29-bbdc-44471dc83ea3",
-                    "" + startSize, "" + endSize, "" + count
-            );
+            new DownloadTask(this).execute(url, "" + startSize, "" + endSize, "" + count);
             startSize += CHUNK_DOWNLOAD_OFFSET;
             endSize += CHUNK_DOWNLOAD_OFFSET;
             if (endSize > total_size) {
@@ -147,8 +138,9 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
                 input = connection.getInputStream();
                 Map<String, List<String>> responseHeaders = connection.getHeaderFields();
                 if (remaining_download_size == 0) {
-                    total_size = remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
-                    fileNameWithExtension = responseHeaders.get("Content-Disposition").get(0);
+                    //total_size = remaining_download_size = Long.valueOf(responseHeaders.get("x-goog-stored-content-length").get(0));
+                    total_size = remaining_download_size = Long.valueOf(responseHeaders.get("Content-Range").get(0).substring(10));
+                    fileNameWithExtension = "AWSZipFile"; //responseHeaders.get("Content-Disposition").get(0);
                     //startDownload();
                     threadInitiator();
                     return null;
@@ -161,10 +153,10 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
                 if (!folder_file.exists())
                     folder_file.mkdirs();
                 String m_path;
-                if( sUrl[3].length()>1) {
+                if (sUrl[3].length() > 1) {
                     m_path = Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image" + sUrl[3]).getAbsolutePath();
-                }else {
+                } else {
                     m_path = Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName + "/Image0" + sUrl[3]).getAbsolutePath();
                 }
@@ -213,8 +205,8 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
 
         @Override
         protected Void doInBackground(Void... voids) {
-            mFolderName="Arnab";
-            mFileExtension=".mp4";
+            mFolderName = "Arnab";
+            mFileExtension = ".zip";
             String folderPath = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DCIM + File.separator + "/" + mFolderName).getAbsolutePath();
             File folder = new File(folderPath);
@@ -261,7 +253,7 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
 
     @Override
     public void onChunkDownloadComplete() {
-        Log.d("msg","callback");
+        Log.d("msg", "callback");
         totalNumberOfDownloadedFiles++;
         if (totalNumberOfDownloadedFiles == count) {
             Log.d("msg", "onChunkDownloadComplete: Finished");
@@ -272,13 +264,13 @@ String url="https://firebasestorage.googleapis.com/v0/b/fir-d6ee4.appspot.com/o/
     @Override
     public void onFullDownloadComplete(File file) {
         Log.d("msg", "Time taken: " + Math.abs(startTime - System.currentTimeMillis()));
-        String filePath = file.getPath();
+        /*String filePath = file.getPath();
         final Bitmap bitmap = BitmapFactory.decodeFile(filePath);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 mImageView.setImageBitmap(bitmap);
             }
-        });
+        });*/
     }
 }
