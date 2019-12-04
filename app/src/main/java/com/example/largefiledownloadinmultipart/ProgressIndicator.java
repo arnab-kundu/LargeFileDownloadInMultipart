@@ -85,7 +85,8 @@ public class ProgressIndicator extends View {
         float bitmapWidth = w - 2 * mPadding;
         float bitmapHeight = h - 2 * mPadding;
         float radius = Math.min(bitmapWidth / 2, bitmapHeight / 2);
-        mRectSmall.set(20, 20, bitmapWidth - 20, bitmapHeight - 20);
+        float rectSmallRadius = radius * 0.045F;
+        mRectSmall.set(rectSmallRadius, rectSmallRadius, bitmapWidth - rectSmallRadius, bitmapHeight - rectSmallRadius);
         mRect.set(0, 0, bitmapWidth, bitmapHeight);
         radius *= INNER_RADIUS_RATIO;
         mRectInner.set(bitmapWidth / 2f - radius, bitmapHeight / 2f - radius, bitmapWidth / 2f + radius, bitmapHeight / 2f + radius);
@@ -129,7 +130,7 @@ public class ProgressIndicator extends View {
         Canvas canvas = new Canvas(mBitmap);
         
         canvas.drawCircle(mRect.width() / 2, mRect.height() / 2, mRect.width() / 2, mPaintForeground);
-        canvas.drawCircle(mRect.width() / 2, mRect.height() / 2, (mRect.width() / 2) - 20, mPaintBackground);
+        canvas.drawCircle(mRect.width() / 2, mRect.height() / 2, (mRect.width() / 2) - (mRect.width() * 0.09F), mPaintBackground);
         //canvas.drawArc(mRect, -90, 360, true, mPaintBackground);
         if (mValue < 0.01f) {
             canvas.drawLine(mRect.width() / 2, mRect.height() / 2, mRect.width() / 2, 0, mPaintForeground);
