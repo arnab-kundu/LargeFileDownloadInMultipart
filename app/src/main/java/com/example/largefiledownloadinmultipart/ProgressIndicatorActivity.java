@@ -21,8 +21,8 @@ public class ProgressIndicatorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_progress_indicator);
 
         mProgressIndicator1 = (ProgressIndicator) findViewById(R.id.determinate_progress_indicator1);
-        mProgressIndicator1.setForegroundColor(Color.parseColor("#AAAAAA"));
-        mProgressIndicator1.setBackgroundColor(Color.WHITE);
+        //mProgressIndicator1.setForegroundColor(Color.parseColor("#AAAAAA"));
+        //mProgressIndicator1.setBackgroundColor(Color.WHITE);
         mProgressIndicator1.setPieStyle(true);
         startThread();
     }
@@ -37,6 +37,7 @@ public class ProgressIndicatorActivity extends AppCompatActivity {
                 update = 0;
                 while (update <= max) {
                     update += 0.005;
+                    //Log.d("msg", "run: "+update);
                     updateProgressIndicatorValue();
                     try {
                         Thread.sleep(100);

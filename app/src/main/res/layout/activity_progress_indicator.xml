@@ -9,6 +9,8 @@
     <com.example.largefiledownloadinmultipart.ProgressIndicator
         android:id="@+id/determinate_progress_indicator1"
         android:layout_width="100dp"
+        app:ColorForeground="#03A9F4"
+        app:ColorBackground="#FFFFFF"
         android:layout_height="100dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
